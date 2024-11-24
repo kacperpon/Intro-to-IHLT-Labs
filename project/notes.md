@@ -1,7 +1,7 @@
 # Semantic Textual Similarity Project (IHLT)
 
 ## Project Weightage
-- **30%** of Continuous Assessment (CA).
+- **30%**: Content of project.
 - **10%**: Questions we ask during other presentations.
 - **10%**: How we answer questions from others.
 - **Overall**: **50% of CA**.
