@@ -44,3 +44,10 @@ Trained model outputs gold standard scores for each sentence pair -> we can comp
 
 Compute Pearson correlation.
 
+---
+
+You can easily convert a Jupyter Notebook into a Python script using:
+
+```bash
+jupyter nbconvert --to script preprocess.ipynb
+```
