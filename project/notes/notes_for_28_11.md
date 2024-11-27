@@ -28,3 +28,7 @@ Be prepared to make changes! [remove features if they perform poorly + replace w
 
 Is 6 enough? (2 in each category.. do we want / need more?)
 - Missing any suited for paraphrase detection?
+
+---
+
+Because different pre-processing techniques are to be applied, I don't think saving files is relevant anymore.
