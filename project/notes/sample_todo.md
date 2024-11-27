@@ -1,7 +1,7 @@
 # TODO List for STS Project
 
 ## 1. Setup and Preparation
-- [ ] Install required Python libraries:
+- [x] Install required Python libraries:
   - [ ] `spacy`
   - [ ] `scikit-learn`
   - [ ] `pandas`
@@ -9,14 +9,13 @@
   - [ ] `matplotlib`
   - [ ] `scipy`
   - [ ] `nltk`
-- [ ] Download and install SpaCy's small language model: `python -m spacy download en_core_web_sm`
 - [x] Create project directory structure:
   - `data/`
   - `notebooks/`
   - `src/`
   - `results/`
   - `slides/`
-- [ ] Review `train` and `test` datasets to understand input-output formats.
+- [x] Review `train` and `test` datasets to understand input-output formats.
 - [ ] Preprocess the data:
   - [ ] Tokenization and lemmatization (e.g., using SpaCy or TreeTagger).
   - [ ] Remove stopwords where necessary.
