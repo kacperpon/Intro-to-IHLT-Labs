@@ -17,14 +17,6 @@ def load_sentence_files(path: str) -> pd.DataFrame:
     return pd.DataFrame(file_contents)
 
 
-# TODO: Implement this!
-def preprocess_files(sentence_files: pd.DataFrame) -> pd.DataFrame:
-    """
-    Apply preprocessing steps to the sentence files.
-    """
-    return sentence_files
-
-
 def save_preprocessed_files(sentence_files: pd.DataFrame, target_path: str):
     """
     Save preprocessed DataFrame to files in the specified target path.

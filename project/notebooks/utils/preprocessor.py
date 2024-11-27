@@ -43,9 +43,6 @@ class Preprocessor:
     def preprocess_files(self, sentence_files: pd.DataFrame, pipeline_mapping: dict) -> pd.DataFrame:
         """
         Preprocess content in the DataFrame based on the pipeline mapping.
-        :param sentence_files: DataFrame containing sentence files.
-        :param pipeline_mapping: Mapping of file types or features to pipeline names.
-        :return: Preprocessed DataFrame.
         """
         for idx, row in sentence_files.iterrows():
             filename = row['filename']
