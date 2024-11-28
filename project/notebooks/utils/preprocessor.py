@@ -7,8 +7,10 @@ class Preprocessor:
         # Different preprocessing pipelines, modify if required
         self.pipelines = {
             'semantic': [self.lowercase, self.tokenize, self.lemmatize],
-            'lexical': [self.lowercase, self.remove_punctuation, self.tokenize],
-            'structural': [self.lowercase, self.tokenize],
+            'jaccard': [self.lowercase, self.remove_punctuation, self.tokenize],
+            'lowest_common_subsequence': [self.lowercase],
+            #'pos_tag_overlap': [self.lowercase, self.POS_tag],
+            'sentence_length_ratio': [self.tokenize],
             'default': [self.lowercase]
         }
 
@@ -55,3 +57,6 @@ class Preprocessor:
             sentence_files.at[idx, 'content'] = self.preprocess(content, pipeline_name)
 
         return sentence_files
+    
+
+    # array of same length as dataframe passed in, tuple of two strings (sentence1, sentence2)
