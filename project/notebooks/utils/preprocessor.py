@@ -1,6 +1,8 @@
 import re
 import nltk
+from nltk.corpus import stopwords
 import pandas as pd
+from nltk import pos_tag
 
 class Preprocessor:
     def __init__(self):
@@ -11,8 +13,12 @@ class Preprocessor:
             'lowest_common_subsequence': [self.lowercase],
             #'pos_tag_overlap': [self.lowercase, self.POS_tag],
             'sentence_length_ratio': [self.tokenize],
-            'default': [self.lowercase]
+            'default': [self.lowercase],
+
+            # Alternative naming for pipelines
+            'lowercase_noPunct_tokenize_onlyWords_noStop_POS': [self.lowercase, self.remove_punctuation, self.tokenize, self.remove_no_words, self.remove_stopwords, self.POS_tag],
         }
+        self.stopwords = set(stopwords.words('english'))
 
     def lowercase(self, text: str) -> str:
         return text.lower()
@@ -26,6 +32,15 @@ class Preprocessor:
 
     def remove_punctuation(self, text: str) -> str:
         return re.sub(r'[^\w\s]', '', text)
+
+    def remove_no_words(self, tokens: list) -> list:
+        return [w for w in tokens if w.isalpha()] 
+
+    def remove_stopwords(self, tokens: list) -> list:
+        return [w for w in tokens if w not in self.stopwords]
+
+    def POS_tag(self, tokens: list) -> list:
+        return nltk.pos_tag(tokens)
 
     def add_pipeline(self, name: str, steps: list):
         """
@@ -58,5 +73,17 @@ class Preprocessor:
 
         return sentence_files
     
+    def preprocess_df(self, df: pd.DataFrame, pipeline_name: str) -> any:
+        """
+        Preprocess content in the DataFrame based on the pipeline mapping.
+        Returnsn array of tuples of two strings (sentence1, sentence2)
+        """
+        ret = []
+        for idx, row in df.iterrows():
+            ret.append((self.preprocess(row['s1'], pipeline_name), self.preprocess(row['s2'], pipeline_name)))
 
+        return ret
+    
     # array of same length as dataframe passed in, tuple of two strings (sentence1, sentence2)
+
+
