@@ -76,7 +76,7 @@ class Preprocessor:
     def preprocess_df(self, df: pd.DataFrame, pipeline_name: str) -> any:
         """
         Preprocess content in the DataFrame based on the pipeline mapping.
-        Returnsn array of tuples of two strings (sentence1, sentence2)
+        Returns array of tuples of two strings (sentence1, sentence2)
         """
         ret = []
         for idx, row in df.iterrows():
@@ -84,6 +84,4 @@ class Preprocessor:
 
         return ret
     
-    # array of same length as dataframe passed in, tuple of two strings (sentence1, sentence2)
-
 
