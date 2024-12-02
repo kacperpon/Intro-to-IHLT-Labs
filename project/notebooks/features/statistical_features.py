@@ -2,6 +2,7 @@ from functools import lru_cache
 from itertools import product
 from pandas import DataFrame
 from utils.preprocessor import Preprocessor
+import nltk
 
 # TODO: change this into a class, create preprocessor object in __init__ and use it in the methods
 
@@ -109,13 +110,15 @@ def add_synset_statistics(df: DataFrame):
         s1_synsets = [synset for synset_list in pair[0] for synset in synset_list]  # Flatten list of lists
         s2_synsets = [synset for synset_list in pair[1] for synset in synset_list]  # Flatten list of lists
 
+        # Commenting this because it's very dangerous: if this is executed, two appends will be done for the same sentence pair, 
+        # so the length will not match with the dataset!
         # Handle empty synset lists
-        if not s1_synsets or not s2_synsets:
-            relational_features['shared_synsets_count'].append(0)
-            relational_features['shared_synsets_ratio'].append(0)
-            relational_features['avg_synset_similarity'].append(0)
-            relational_features['max_synset_similarity'].append(0)
-            continue
+        # if not s1_synsets or not s2_synsets:
+        #     relational_features['shared_synsets_count'].append(0)
+        #     relational_features['shared_synsets_ratio'].append(0)
+        #     relational_features['avg_synset_similarity'].append(0)
+        #     relational_features['max_synset_similarity'].append(0)
+        #     continue
 
         # Shared synsets
         shared_synsets = set(s1_synsets).intersection(set(s2_synsets))
@@ -143,3 +146,55 @@ def add_synset_statistics(df: DataFrame):
     # Add the relational features to the DataFrame
     for feature_name, values in relational_features.items():
         df[feature_name] = values
+
+
+@lru_cache(maxsize=None)
+def cached_wup_similarity(syn1, syn2):
+    return syn1.wup_similarity(syn2)
+
+def compute_sysnsets_distances(df, row, prefix, synsets1, synsets2):
+    shared_synsets = synsets1.intersection(synsets2)
+    total_unique_synsets = len(set(synsets1).union(set(synsets2)))
+    shared_ratio = len(shared_synsets) / total_unique_synsets if total_unique_synsets > 0 else -1
+
+    similarities = [
+        cached_wup_similarity(syn1, syn2)
+        for syn1, syn2 in product(synsets1, synsets2)
+        if cached_wup_similarity(syn1, syn2) is not None
+    ]
+
+    df.loc[row, prefix + 'shared_synsets_count'] = len(shared_synsets)
+    df.loc[row, prefix + 'shared_synsets_ratio'] = shared_ratio
+    df.loc[row, prefix + 'avg_synset_similarity'] = sum(similarities) / len(similarities) if similarities else -1
+    df.loc[row, prefix + 'max_synset_similarity'] = max(similarities) if similarities else -1
+
+def add_synset_statistics_ext(df: DataFrame):
+    preprop = Preprocessor()
+
+    # Preprocess the DataFrame to extract synsets
+    syns = preprop.preprocess_df(df, 'tokenise_noPunct_lowercase_POS_lemma_noStop_synset')
+
+    total = len(syns)
+    for i in range(total):
+        # All synsets statistics
+        s1 = {synset for sublist in syns[i][0] for synset in sublist}
+        s2 = {synset for sublist in syns[i][1] for synset in sublist}
+        compute_sysnsets_distances(df, i, 'all_all_', s1, s2)
+        compute_sysnsets_distances(df, i, 'all_verb_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.VERB}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.VERB})
+        compute_sysnsets_distances(df, i, 'all_noun_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.NOUN}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.NOUN})
+        compute_sysnsets_distances(df, i, 'all_adj_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.ADJ}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.ADJ})
+        compute_sysnsets_distances(df, i, 'all_adv_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.ADV}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.ADV})
+        
+        # Most common sysnset statistics
+        s1 = {synset[0] for synset in syns[i][0] if len(synset) > 0}
+        s2 = {synset[0] for synset in syns[i][1] if len(synset) > 0}
+        compute_sysnsets_distances(df, i, 'best_all_', s1, s2)
+        compute_sysnsets_distances(df, i, 'best_verb_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.VERB}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.VERB})
+        compute_sysnsets_distances(df, i, 'best_noun_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.NOUN}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.NOUN})
+        compute_sysnsets_distances(df, i, 'best_adj_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.ADJ}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.ADJ})
+        compute_sysnsets_distances(df, i, 'best_adv_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.ADV}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.ADV})
+        if i % 10 == 0:
+            print(f"\rProcessed {i} of {total} rows ({i*100/total:.1f}%)", end='', flush=True)
+    
+    print(f"\rProcessed {i + 1}/{len(syns)} rows (100.0%)")
+
