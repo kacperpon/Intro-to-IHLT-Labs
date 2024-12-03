@@ -92,8 +92,11 @@ class Preprocessor:
         Apply the specified preprocessing pipeline to the text.
         """
         pipeline = self.pipelines.get(pipeline_name)
+        # print("*************")
+        # print(text)
         for step in pipeline:
             text = step(text)
+            # print(text)
         return text
     
     def preprocess_df(self, df: pd.DataFrame, pipeline_name: str) -> any:
