@@ -198,3 +198,40 @@ def add_synset_statistics_ext(df: DataFrame):
     
     print(f"\rProcessed {i + 1}/{len(syns)} rows (100.0%)")
 
+# Lemma-based techniques
+def add_lemma_statistics(df: DataFrame):
+    preprop = Preprocessor()
+
+    # Preprocess the DataFrame to extract lemmas
+    lemmas = preprop.preprocess_df(df, 'tokenise_noPunct_lowercase_noStop_lemma')
+
+    relational_features = {
+        'lemma_diversity': [],
+        'shared_lemmas_ratio': [],
+        'avg_lemma_similarity': [],
+        'max_lemma_similarity': [],
+    }
+
+    for pair in lemmas:
+        s1_lemmas = [lemma for lemma in pair[0] if lemma]
+        s2_lemmas = [lemma for lemma in pair[1] if lemma]
+
+        # Lemma diversity
+        total_unique_lemmas = len(set(s1_lemmas).union(set(s2_lemmas)))
+        relational_features['lemma_diversity'].append(total_unique_lemmas)
+
+        # Shared lemma ratio (normalized by total unique lemmas)
+        shared_lemmas = set(s1_lemmas).intersection(set(s2_lemmas))
+        shared_ratio = len(shared_lemmas) / total_unique_lemmas if total_unique_lemmas > 0 else 0
+        relational_features['shared_lemmas_ratio'].append(shared_ratio)
+
+        # Calculate average similarities of s1_lemmas and s2_lemmas
+        similarities = [
+            cached_wup_similarity(lemma1, lemma2)
+            for lemma1, lemma2 in product(s1_lemmas, s2_lemmas)
+            if cached_wup_similarity(lemma1, lemma2) is not None
+        ]
+
+        
+        
+        

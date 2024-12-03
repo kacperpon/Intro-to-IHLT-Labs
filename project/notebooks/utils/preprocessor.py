@@ -31,6 +31,12 @@ class Preprocessor:
                                                                 self.POS_tag,
                                                                 self.lemmatize,
                                                                 self.synset],
+
+            'tokenise_noPunct_lowercase_noStop_lemma': [self.lowercase,
+                                                        self.remove_punctuation,
+                                                        self.remove_stopwords,
+                                                        self.tokenize,
+                                                        self.lemmatize],
         }
         self.stopwords = set(stopwords.words('english'))
 
