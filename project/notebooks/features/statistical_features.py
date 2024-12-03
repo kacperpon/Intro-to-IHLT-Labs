@@ -154,7 +154,6 @@ def add_synset_statistics(df: DataFrame):
     for feature_name, values in relational_features.items():
         df[feature_name] = values
 
-
 @lru_cache(maxsize=None)
 def cached_wup_similarity(syn1, syn2):
     return syn1.wup_similarity(syn2)
@@ -218,8 +217,15 @@ def add_lemma_statistics(df: DataFrame):
         'lemma_diversity': [],
         'shared_lemmas_ratio': [],
         'avg_lemma_similarity': [],
-        'max_lemma_similarity': [],
+        'max_lemma_similarity': []
     }
+    
+    def jaccard_similarity(lemma1, lemma2):
+        set1 = set(lemma1)
+        set2 = set(lemma2)
+        intersection = len(set1 & set2)
+        union = len(set1 | set2)
+        return intersection / union if union != 0 else 0
 
     for pair in lemmas:
         s1_lemmas = [lemma for lemma in pair[0] if lemma]
@@ -234,13 +240,14 @@ def add_lemma_statistics(df: DataFrame):
         shared_ratio = len(shared_lemmas) / total_unique_lemmas if total_unique_lemmas > 0 else 0
         relational_features['shared_lemmas_ratio'].append(shared_ratio)
 
-        # Calculate average similarities of s1_lemmas and s2_lemmas
         similarities = [
-            cached_wup_similarity(lemma1, lemma2)
-            for lemma1, lemma2 in product(s1_lemmas, s2_lemmas)
-            if cached_wup_similarity(lemma1, lemma2) is not None
+            jaccard_similarity(set(lemma1), set(lemma2)) for lemma1 in s1_lemmas for lemma2 in s2_lemmas
         ]
 
-        
-        
-        
+        avg_similarity = sum(similarities) / len(similarities) if similarities else 0
+        max_similarity = max(similarities) if similarities else 0
+        relational_features['avg_lemma_similarity'].append(avg_similarity)
+        relational_features['max_lemma_similarity'].append(max_similarity)
+
+    for key, values in relational_features.items():
+        df[key] = values

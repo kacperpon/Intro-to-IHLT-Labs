@@ -29,13 +29,13 @@ class Preprocessor:
                                                                 self.tokenize,
                                                                 self.remove_stopwords,
                                                                 self.POS_tag,
-                                                                self.lemmatize,
+                                                                self.lemmatize_pos,
                                                                 self.synset],
 
             'tokenise_noPunct_lowercase_noStop_lemma': [self.lowercase,
                                                         self.remove_punctuation,
-                                                        self.remove_stopwords,
                                                         self.tokenize,
+                                                        self.remove_stopwords,
                                                         self.lemmatize],
         }
         self.stopwords = set(stopwords.words('english'))
@@ -58,13 +58,17 @@ class Preprocessor:
         else:
             return None
     
-    def lemmatize(self, tokens: list) -> list:
+    def lemmatize_pos(self, tokens: list) -> list:
         lemmatizer = nltk.WordNetLemmatizer()
         lemmatized_tokens = []
         for token, tag in tokens:
             wordnet_pos = self.get_wordnet_pos(tag) or wordnet.NOUN  # Default to NOUN if no mapping
             lemmatized_tokens.append(lemmatizer.lemmatize(token, pos=wordnet_pos))
         return lemmatized_tokens
+    
+    def lemmatize(self, tokens: list) -> list:
+        lemmatizer = nltk.WordNetLemmatizer()
+        return [lemmatizer.lemmatize(token) for token in tokens]
 
     def remove_punctuation(self, text: str) -> str:
         return re.sub(r'[^\w\s]', '', text)
