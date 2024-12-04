@@ -206,7 +206,7 @@ class FeatureExtractor:
         print(f"\rProcessed {i + 1}/{len(syns)} rows (100.0%)    ")
 
     # Lemma-based techniques
-    def add_lemma_statistics(df: DataFrame):
+    def add_lemma_statistics(self, df: DataFrame):
         preprop = Preprocessor()
 
         # Preprocess the DataFrame to extract lemmas
