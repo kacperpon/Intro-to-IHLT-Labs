@@ -1,8 +1,11 @@
 from functools import lru_cache
 from itertools import product
+from typing import List
 from pandas import DataFrame
 from utils.preprocessor import Preprocessor
 import nltk
+from nltk.util import bigrams
+from difflib import SequenceMatcher
 
 class FeatureExtractor:
     NOUNS = ['NN', 'NNS', 'NNP', 'NNPS']
@@ -216,7 +219,15 @@ class FeatureExtractor:
             'lemma_diversity': [],
             'shared_lemmas_ratio': [],
             'avg_lemma_similarity': [],
-            'max_lemma_similarity': []
+            'max_lemma_similarity': [],
+            'shared_lemma_count': [],
+            'dice_coefficient': [],
+            'lemma_bigram_overlap': [],
+            'lemma_lcs_length': [],
+            'lemma_edit_distance': [],
+            'proportion_s1_in_s2': [],
+            'proportion_s2_in_s1': [],
+            'lemma_position_similarity': [],
         }
     
         def jaccard_similarity(lemma1, lemma2):
@@ -225,6 +236,18 @@ class FeatureExtractor:
             intersection = len(set1 & set2)
             union = len(set1 | set2)
             return intersection / union if union != 0 else 0
+        
+        def compute_lcs_length(s1: List[str], s2: List[str]) -> int:
+            matcher = SequenceMatcher(None, s1, s2)
+            return sum(block.size for block in matcher.get_matching_blocks())
+        
+        def compute_position_similarity(s1: List[str], s2: List[str]) -> float:
+            positions = []
+            for lemma in set(s1) & set(s2):
+                pos_s1 = s1.index(lemma)
+                pos_s2 = s2.index(lemma)
+                positions.append(1 - abs(pos_s1 - pos_s2) / max(len(s1), len(s2)))
+            return sum(positions) / len(positions) if positions else 0
 
         for pair in lemmas:
             s1_lemmas = [lemma for lemma in pair[0] if lemma]
@@ -239,6 +262,7 @@ class FeatureExtractor:
             shared_ratio = len(shared_lemmas) / total_unique_lemmas if total_unique_lemmas > 0 else 0
             relational_features['shared_lemmas_ratio'].append(shared_ratio)
 
+            # Jaccard similarity
             similarities = [
                 jaccard_similarity(set(lemma1), set(lemma2)) for lemma1 in s1_lemmas for lemma2 in s2_lemmas
             ]
@@ -247,6 +271,36 @@ class FeatureExtractor:
             max_similarity = max(similarities) if similarities else 0
             relational_features['avg_lemma_similarity'].append(avg_similarity)
             relational_features['max_lemma_similarity'].append(max_similarity)
+
+            # Shared lemma count
+            shared_lemma_count = len(shared_lemmas)
+            relational_features['shared_lemma_count'].append(shared_lemma_count)
+
+            # Dice coefficient
+            dice_coefficient = (2 * len(shared_lemmas)) / (len(set(s1_lemmas)) + len(set(s2_lemmas))) if (len(set(s1_lemmas)) + len(set(s2_lemmas))) > 0 else 0
+            relational_features['dice_coefficient'].append(dice_coefficient)
+
+            s1_bigrams = set(bigrams(s1_lemmas))
+            s2_bigrams = set(bigrams(s2_lemmas))
+            bigram_overlap = len(s1_bigrams & s2_bigrams) / len(s1_bigrams | s2_bigrams) if len(s1_bigrams | s2_bigrams) > 0 else 0
+            relational_features['lemma_bigram_overlap'].append(bigram_overlap)
+
+            # Longest Common Subsequence (LCS) length
+            lcs_length = compute_lcs_length(s1_lemmas, s2_lemmas)
+            relational_features['lemma_lcs_length'].append(lcs_length)
+
+            lemma_edit_distance = nltk.edit_distance(s1_lemmas, s2_lemmas)
+            relational_features['lemma_edit_distance'].append(lemma_edit_distance)
+
+            # Proportion of lemmas
+            proportion_s1_in_s2 = len(shared_lemmas) / len(set(s1_lemmas)) if len(set(s1_lemmas)) > 0 else 0
+            proportion_s2_in_s1 = len(shared_lemmas) / len(set(s2_lemmas)) if len(set(s2_lemmas)) > 0 else 0
+            relational_features['proportion_s1_in_s2'].append(proportion_s1_in_s2)
+            relational_features['proportion_s2_in_s1'].append(proportion_s2_in_s1)
+
+            # Position similarity
+            position_similarity = compute_position_similarity(s1_lemmas, s2_lemmas)
+            relational_features['lemma_position_similarity'].append(position_similarity)
 
         for key, values in relational_features.items():
             df[key] = values
