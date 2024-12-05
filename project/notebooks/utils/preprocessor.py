@@ -23,6 +23,12 @@ class Preprocessor:
                                                                 self.remove_no_words,
                                                                 self.remove_stopwords,
                                                                 self.POS_tag],
+
+            'lowercase_tokenize_POS': [self.lowercase,
+                                        self.tokenize,
+                                        self.POS_tag],
+
+            
             # Synset creation
             'tokenise_noPunct_lowercase_POS_lemma_noStop_synset': [self.lowercase,
                                                                    self.remove_punctuation,
