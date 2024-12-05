@@ -23,44 +23,23 @@ class FeatureExtractor:
     def __init__(self):
         self.preprocessor = Preprocessor()
 
+    # def add_Word_statistics(self, df=None):
+    #     print("Adding Word based features...")
+    #     preprop = Preprocessor()
+    #     # Preprocess and extract POS tags for each sentence
+    #     print(preprop.preprocess("But they were necessary.", 'lowercase_tokenize_POS'))
+    #     print(preprop.preprocess("But they were necessary.", 'lowercase_noPunct_tokenize_onlyWords_noStop_POS'))
+    #     print(preprop.preprocess("But they were needed.", 'lowercase_tokenize_POS'))
+    #     print(preprop.preprocess("But they were needed.", 'lowercase_noPunct_tokenize_onlyWords_noStop_POS'))
+        
+
     def add_POS_statistics(self, df):
         print("Adding POS based features...")
         # Create a preprocessor object
         preprop = Preprocessor()
         # Preprocess and extract POS tags for each sentence
-        pos = preprop.preprocess_df(df, 'lowercase_noPunct_tokenize_onlyWords_noStop_POS')
-
-        # relational_features = {
-        #     'dif_n_words': [],
-        #     'dif_n_verbs': [],
-        #     'dif_n_nouns': [],
-        #     'dif_n_adjectives': [],
-        #     'dif_n_adverbs': []
-        # }
-
-        # Compute relational statistics for each sentence pair
-        # for pair in pos:
-        #     s1 = pair[0]  
-        #     s2 = pair[1]
-            
-        #     # Relational features: differences
-        #     relational_features['dif_n_words'].append(len(s1) - len(s2))
-        #     relational_features['dif_n_verbs'].append(
-        #         len([word for word in s1 if word[1] in VERBS]) - len([word for word in s2 if word[1] in VERBS])
-        #     )
-        #     relational_features['dif_n_nouns'].append(
-        #         len([word for word in s1 if word[1] in NOUNS]) - len([word for word in s2 if word[1] in NOUNS])
-        #     )
-        #     relational_features['dif_n_adjectives'].append(
-        #         len([word for word in s1 if word[1] in ADJECTIVES]) - len([word for word in s2 if word[1] in ADJECTIVES])
-        #     )
-        #     relational_features['dif_n_adverbs'].append(
-        #         len([word for word in s1 if word[1] in ADVERBS]) - len([word for word in s2 if word[1] in ADVERBS])
-        #     )
-
-        # for feature_name, values in relational_features.items():
-        #     df[feature_name] = values
-
+        # pos = preprop.preprocess_df(df, 'lowercase_noPunct_tokenize_onlyWords_noStop_POS')
+        pos = preprop.preprocess_df(df, 'lowercase_tokenize_POS')
 
         # Add POS statistics
         for i in range(len(pos)):
