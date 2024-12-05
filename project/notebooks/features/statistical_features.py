@@ -7,6 +7,10 @@ import nltk
 from nltk.util import bigrams
 from difflib import SequenceMatcher
 
+@lru_cache(maxsize=None)
+def cached_wup_similarity(syn1, syn2):
+    return syn1.wup_similarity(syn2)
+
 class FeatureExtractor:
     NOUNS = ['NN', 'NNS', 'NNP', 'NNPS']
     VERBS = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
@@ -92,73 +96,69 @@ class FeatureExtractor:
         df['dif_n_adverbs'] = df['s1_n_adverbs'] - df['s2_n_adverbs']
 
 
-    def add_synset_statistics(self, df: DataFrame):
-        preprop = Preprocessor()
+    # def add_synset_statistics(self, df: DataFrame):
+    #     preprop = Preprocessor()
 
-        # Preprocess the DataFrame to extract synsets
-        pos = preprop.preprocess_df(df, 'tokenise_noPunct_lowercase_POS_lemma_noStop_synset')
+    #     # Preprocess the DataFrame to extract synsets
+    #     pos = preprop.preprocess_df(df, 'tokenise_noPunct_lowercase_POS_lemma_noStop_synset')
 
-        relational_features = {
-            'shared_synsets_count': [],
-            'shared_synsets_ratio': [],
-            'avg_synset_similarity': [],
-            'max_synset_similarity': [],
-        }
+    #     relational_features = {
+    #         'shared_synsets_count': [],
+    #         'shared_synsets_ratio': [],
+    #         'avg_synset_similarity': [],
+    #         'max_synset_similarity': [],
+    #     }
 
-        @lru_cache(maxsize=None)
-        def cached_wup_similarity(syn1, syn2):
-            return syn1.wup_similarity(syn2)
+    #     @lru_cache(maxsize=None)
+    #     def cached_wup_similarity(syn1, syn2):
+    #         return syn1.wup_similarity(syn2)
 
-        for pair in pos:
+    #     for pair in pos:
 
-            print(pair)
-            s1_synsets = [synset_list[:3] for synset_list in pair[0] if synset_list]
-            s2_synsets = [synset_list[:3] for synset_list in pair[1] if synset_list]
+    #         print(pair)
+    #         s1_synsets = [synset_list[:3] for synset_list in pair[0] if synset_list]
+    #         s2_synsets = [synset_list[:3] for synset_list in pair[1] if synset_list]
 
-            # Flatten and clean synsets for both sentences
-            s1_synsets = [synset for synset_list in pair[0] for synset in synset_list]  # Flatten list of lists
-            s2_synsets = [synset for synset_list in pair[1] for synset in synset_list]  # Flatten list of lists
+    #         # Flatten and clean synsets for both sentences
+    #         s1_synsets = [synset for synset_list in pair[0] for synset in synset_list]  # Flatten list of lists
+    #         s2_synsets = [synset for synset_list in pair[1] for synset in synset_list]  # Flatten list of lists
 
-            # Commenting this because it's very dangerous: if this is executed, two appends will be done for the same sentence pair, 
-            # so the length will not match with the dataset!
-            # Handle empty synset lists
-            # if not s1_synsets or not s2_synsets:
-            #     relational_features['shared_synsets_count'].append(0)
-            #     relational_features['shared_synsets_ratio'].append(0)
-            #     relational_features['avg_synset_similarity'].append(0)
-            #     relational_features['max_synset_similarity'].append(0)
-            #     continue
+    #         # Commenting this because it's very dangerous: if this is executed, two appends will be done for the same sentence pair, 
+    #         # so the length will not match with the dataset!
+    #         # Handle empty synset lists
+    #         # if not s1_synsets or not s2_synsets:
+    #         #     relational_features['shared_synsets_count'].append(0)
+    #         #     relational_features['shared_synsets_ratio'].append(0)
+    #         #     relational_features['avg_synset_similarity'].append(0)
+    #         #     relational_features['max_synset_similarity'].append(0)
+    #         #     continue
 
-            # Shared synsets
-            shared_synsets = set(s1_synsets).intersection(set(s2_synsets))
-            relational_features['shared_synsets_count'].append(len(shared_synsets))
+    #         # Shared synsets
+    #         shared_synsets = set(s1_synsets).intersection(set(s2_synsets))
+    #         relational_features['shared_synsets_count'].append(len(shared_synsets))
 
-            # Shared synset ratio (normalized by total unique synsets)
-            total_unique_synsets = len(set(s1_synsets).union(set(s2_synsets)))
-            shared_ratio = len(shared_synsets) / total_unique_synsets if total_unique_synsets > 0 else 0
-            relational_features['shared_synsets_ratio'].append(shared_ratio)
+    #         # Shared synset ratio (normalized by total unique synsets)
+    #         total_unique_synsets = len(set(s1_synsets).union(set(s2_synsets)))
+    #         shared_ratio = len(shared_synsets) / total_unique_synsets if total_unique_synsets > 0 else 0
+    #         relational_features['shared_synsets_ratio'].append(shared_ratio)
 
-            similarities = [
-                cached_wup_similarity(syn1, syn2)
-                for syn1, syn2 in product(s1_synsets, s2_synsets)
-                if cached_wup_similarity(syn1, syn2) is not None
-            ]
+    #         similarities = [
+    #             cached_wup_similarity(syn1, syn2)
+    #             for syn1, syn2 in product(s1_synsets, s2_synsets)
+    #             if cached_wup_similarity(syn1, syn2) is not None
+    #         ]
 
-            # Calculate average and maximum similarities
-            if similarities:
-                relational_features['avg_synset_similarity'].append(sum(similarities) / len(similarities))
-                relational_features['max_synset_similarity'].append(max(similarities))
-            else:
-                relational_features['avg_synset_similarity'].append(0)
-                relational_features['max_synset_similarity'].append(0)
+    #         # Calculate average and maximum similarities
+    #         if similarities:
+    #             relational_features['avg_synset_similarity'].append(sum(similarities) / len(similarities))
+    #             relational_features['max_synset_similarity'].append(max(similarities))
+    #         else:
+    #             relational_features['avg_synset_similarity'].append(0)
+    #             relational_features['max_synset_similarity'].append(0)
 
-        # Add the relational features to the DataFrame
-        for feature_name, values in relational_features.items():
-            df[feature_name] = values
-
-    @lru_cache(maxsize=None)
-    def cached_wup_similarity(syn1, syn2):
-        return syn1.wup_similarity(syn2)
+    #     # Add the relational features to the DataFrame
+    #     for feature_name, values in relational_features.items():
+    #         df[feature_name] = values
 
     def compute_sysnsets_distances(self, df, row, prefix, synsets1, synsets2):
         shared_synsets = synsets1.intersection(synsets2)
@@ -166,9 +166,9 @@ class FeatureExtractor:
         shared_ratio = len(shared_synsets) / total_unique_synsets if total_unique_synsets > 0 else -1
 
         similarities = [
-            self.cached_wup_similarity(syn1, syn2)
+            cached_wup_similarity(syn1, syn2)
             for syn1, syn2 in product(synsets1, synsets2)
-            if syn1.pos() == syn2.pos() and self.cached_wup_similarity(syn1, syn2) is not None
+            if syn1.pos() == syn2.pos() and cached_wup_similarity(syn1, syn2) is not None
         ]
 
         df.loc[row, prefix + 'shared_synsets_count'] = len(shared_synsets)
