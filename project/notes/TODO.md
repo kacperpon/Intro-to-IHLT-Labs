@@ -18,7 +18,7 @@
 - [ ] Data analysis [e.g.: plot history of model]
 - [ ] [Optional] Feature selection
 - [x] Refactor + tidy code and files
-- [ ] Deal with failed combinations in MLP gracefully
+- [x] Deal with failed combinations in MLP gracefully
 - [ ] Error handling throughout
 - [ ] Define README.md
 - [ ] Write analysis and conclusion
