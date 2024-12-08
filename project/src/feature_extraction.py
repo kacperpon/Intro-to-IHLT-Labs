@@ -2,7 +2,7 @@ from functools import lru_cache
 from itertools import product
 from typing import List
 from pandas import DataFrame
-from project.src.utils.preprocessor import Preprocessor
+from preprocessor import Preprocessor
 import nltk
 from nltk.util import bigrams
 from difflib import SequenceMatcher
