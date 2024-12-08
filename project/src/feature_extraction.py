@@ -1,6 +1,7 @@
 from functools import lru_cache
 from itertools import product
-from typing import List
+from typing import List, Set, Tuple
+import numpy as np
 from pandas import DataFrame
 from preprocessor import Preprocessor
 import nltk
@@ -10,9 +11,13 @@ from nltk.metrics import jaccard_distance
 
 @lru_cache(maxsize=None)
 def cached_wup_similarity(syn1, syn2):
+    """
+    Cache Wu-Palmer similarity computation for synsets.
+    """
     return syn1.wup_similarity(syn2)
 
 class FeatureExtractor:
+    # POS tags
     NOUNS = ['NN', 'NNS', 'NNP', 'NNPS']
     VERBS = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
     ADJECTIVES = ['JJ', 'JJR', 'JJS']
@@ -24,50 +29,50 @@ class FeatureExtractor:
     def __init__(self):
         self.preprocessor = Preprocessor()
 
-    # def add_Word_statistics(self, df=None):
-    #     print("Adding Word based features...")
-    #     preprop = Preprocessor()
-    #     # Preprocess and extract POS tags for each sentence
-    #     print(preprop.preprocess("But they were necessary.", 'lowercase_tokenize_POS'))
-    #     print(preprop.preprocess("But they were necessary.", 'lowercase_noPunct_tokenize_onlyWords_noStop_POS'))
-    #     print(preprop.preprocess("But they were needed.", 'lowercase_tokenize_POS'))
-    #     print(preprop.preprocess("But they were needed.", 'lowercase_noPunct_tokenize_onlyWords_noStop_POS'))
-        
+        def _compute_pos_statistics(self, pos_tags: List[Tuple[str, str]], pos_set: Set[str]) -> int:
+            """
+            Count POS occurrences in a tagged sentence.
+            """
+            return len([word for word, pos in pos_tags if pos in pos_set])
 
     def add_POS_statistics(self, df):
         print("Adding POS based features...")
-        # Create a preprocessor object
-        preprop = Preprocessor()
-        # Preprocess and extract POS tags for each sentence
-        # pos = preprop.preprocess_df(df, 'lowercase_noPunct_tokenize_onlyWords_noStop_POS')
-        pos = preprop.preprocess_df(df, 'lowercase_tokenize_POS')
+
+        pos = self.preprocessor.preprocess_df(df, 'lowercase_tokenize_POS')
 
         # Add POS statistics
         for i in range(len(pos)):
             # Number of words
             df.loc[i, 's1_n_words'] = len(pos[i][0])
             df.loc[i, 's2_n_words'] = len(pos[i][1])
+
             # Number of verbs
             verbs1 = [word for word in pos[i][0] if word[1] in self.VERBS]
             verbs2 = [word for word in pos[i][1] if word[1] in self.VERBS]
+
             df.loc[i, 's1_n_verbs_tot'] = len(verbs1)
             df.loc[i, 's2_n_verbs_tot'] = len(verbs2)
+
             # Verbs in present
             df.loc[i, 's1_n_verbs_pres'] = len([word for word in pos[i][0] if word[1] in self.VERBS_PRESENT])
             df.loc[i, 's2_n_verbs_pres'] = len([word for word in pos[i][1] if word[1] in self.VERBS_PRESENT])
+
             # Verbs in present
             df.loc[i, 's1_n_verbs_past'] = len([word for word in pos[i][0] if word[1] in self.VERBS_PAST])
             df.loc[i, 's2_n_verbs_past'] = len([word for word in pos[i][1] if word[1] in self.VERBS_PAST])
+
             # Number of nouns
             nouns1 = [word for word in pos[i][0] if word[1] in self.NOUNS]
             nouns2 = [word for word in pos[i][1] if word[1] in self.NOUNS]
             df.loc[i, 's1_n_nouns'] = len(nouns1)
             df.loc[i, 's2_n_nouns'] = len(nouns2)
+            
             # Number of adjectives
             adj1 = [word for word in pos[i][0] if word[1] in self.ADJECTIVES]
             adj2 = [word for word in pos[i][1] if word[1] in self.ADJECTIVES]
             df.loc[i, 's1_n_adjectives'] = len(adj1)
             df.loc[i, 's2_n_adjectives'] = len(adj2)
+
             # Number of adverbs
             adv1 = [word for word in pos[i][0] if word[1] in self.ADVERBS]
             adv2 = [word for word in pos[i][1] if word[1] in self.ADVERBS]
@@ -90,69 +95,6 @@ class FeatureExtractor:
         df['jaccard_adjectives'] = 1 - jaccard_distance(set(adj1), set(adj2)) if len(adj1) > 0 and len(adj2) > 0 else 0
         df['jaccard_adverbs'] = 1 - jaccard_distance(set(adv1), set(adv2)) if len(adv1) > 0 and len(adv2) > 0 else 0
 
-    # def add_synset_statistics(self, df: DataFrame):
-    #     preprop = Preprocessor()
-
-    #     # Preprocess the DataFrame to extract synsets
-    #     pos = preprop.preprocess_df(df, 'tokenise_noPunct_lowercase_POS_lemma_noStop_synset')
-
-    #     relational_features = {
-    #         'shared_synsets_count': [],
-    #         'shared_synsets_ratio': [],
-    #         'avg_synset_similarity': [],
-    #         'max_synset_similarity': [],
-    #     }
-
-    #     @lru_cache(maxsize=None)
-    #     def cached_wup_similarity(syn1, syn2):
-    #         return syn1.wup_similarity(syn2)
-
-    #     for pair in pos:
-
-    #         print(pair)
-    #         s1_synsets = [synset_list[:3] for synset_list in pair[0] if synset_list]
-    #         s2_synsets = [synset_list[:3] for synset_list in pair[1] if synset_list]
-
-    #         # Flatten and clean synsets for both sentences
-    #         s1_synsets = [synset for synset_list in pair[0] for synset in synset_list]  # Flatten list of lists
-    #         s2_synsets = [synset for synset_list in pair[1] for synset in synset_list]  # Flatten list of lists
-
-    #         # Commenting this because it's very dangerous: if this is executed, two appends will be done for the same sentence pair, 
-    #         # so the length will not match with the dataset!
-    #         # Handle empty synset lists
-    #         # if not s1_synsets or not s2_synsets:
-    #         #     relational_features['shared_synsets_count'].append(0)
-    #         #     relational_features['shared_synsets_ratio'].append(0)
-    #         #     relational_features['avg_synset_similarity'].append(0)
-    #         #     relational_features['max_synset_similarity'].append(0)
-    #         #     continue
-
-    #         # Shared synsets
-    #         shared_synsets = set(s1_synsets).intersection(set(s2_synsets))
-    #         relational_features['shared_synsets_count'].append(len(shared_synsets))
-
-    #         # Shared synset ratio (normalized by total unique synsets)
-    #         total_unique_synsets = len(set(s1_synsets).union(set(s2_synsets)))
-    #         shared_ratio = len(shared_synsets) / total_unique_synsets if total_unique_synsets > 0 else 0
-    #         relational_features['shared_synsets_ratio'].append(shared_ratio)
-
-    #         similarities = [
-    #             cached_wup_similarity(syn1, syn2)
-    #             for syn1, syn2 in product(s1_synsets, s2_synsets)
-    #             if cached_wup_similarity(syn1, syn2) is not None
-    #         ]
-
-    #         # Calculate average and maximum similarities
-    #         if similarities:
-    #             relational_features['avg_synset_similarity'].append(sum(similarities) / len(similarities))
-    #             relational_features['max_synset_similarity'].append(max(similarities))
-    #         else:
-    #             relational_features['avg_synset_similarity'].append(0)
-    #             relational_features['max_synset_similarity'].append(0)
-
-    #     # Add the relational features to the DataFrame
-    #     for feature_name, values in relational_features.items():
-    #         df[feature_name] = values
 
     def compute_sysnsets_distances(self, df, row, prefix, synsets1, synsets2):
         shared_synsets = synsets1.intersection(synsets2)
@@ -177,13 +119,12 @@ class FeatureExtractor:
             df.loc[row, prefix + 'avg_synset_similarity'] = 0
             df.loc[row, prefix + 'max_synset_similarity'] = 0
 
+
     def add_synset_statistics_ext(self, df: DataFrame):
         print("Adding synset based features...")
 
-        preprop = Preprocessor()
-
         # Preprocess the DataFrame to extract synsets
-        syns = preprop.preprocess_df(df, 'tokenise_noPunct_lowercase_POS_lemma_noStop_synset')
+        syns = self.preprocessor.preprocess_df(df, 'tokenise_noPunct_lowercase_POS_lemma_noStop_synset')
 
         total = len(syns)
         for i in range(total):
@@ -209,13 +150,13 @@ class FeatureExtractor:
         
         print(f"\rProcessed {i + 1}/{len(syns)} rows (100.0%)    ")
 
-    # Lemma-based techniques
-    def add_lemma_statistics(self, df: DataFrame):
-        print("Adding lemma based features...")
-        preprop = Preprocessor()
 
-        # Preprocess the DataFrame to extract lemmas
-        lemmas = preprop.preprocess_df(df, 'tokenise_noPunct_lowercase_noStop_lemma')
+    def add_lemma_statistics(self, df: DataFrame) -> None:
+        """
+        Add lemma-based features to the DataFrame.
+        """
+        print("Adding lemma based features...")
+        lemmas = self.preprocessor.preprocess_df(df, 'tokenise_noPunct_lowercase_noStop_lemma')
 
         relational_features = {
             'lemma_diversity': [],
@@ -241,22 +182,25 @@ class FeatureExtractor:
             return intersection / union if union != 0 else 0
         
         def compute_lcs_length(s1: List[str], s2: List[str]) -> int:
+            """
+            Compute Longest Common Subsequence (LCS) length.
+            """
             matcher = SequenceMatcher(None, s1, s2)
             return sum(block.size for block in matcher.get_matching_blocks())
         
         def compute_position_similarity(s1: List[str], s2: List[str]) -> float:
-            positions = []
-            for lemma in set(s1) & set(s2):
-                pos_s1 = s1.index(lemma)
-                pos_s2 = s2.index(lemma)
-                positions.append(1 - abs(pos_s1 - pos_s2) / max(len(s1), len(s2)))
-            return sum(positions) / len(positions) if positions else 0
+            """
+            Compute position similarity for shared lemmas.
+            """
+            positions = [
+                1 - abs(s1.index(lemma) - s2.index(lemma)) / max(len(s1), len(s2))
+                for lemma in set(s1) & set(s2)
+            ]
+            return np.mean(positions) if positions else 0
 
         for pair in lemmas:
             s1_lemmas = [lemma for lemma in pair[0] if lemma]
             s2_lemmas = [lemma for lemma in pair[1] if lemma]
-            # print(s1_lemmas)
-            # print(s2_lemmas)
 
             # Lemma diversity
             total_unique_lemmas = len(set(s1_lemmas).union(set(s2_lemmas)))
@@ -268,16 +212,16 @@ class FeatureExtractor:
             relational_features['shared_lemmas_ratio'].append(shared_ratio)
 
             # Jaccard similarity
-            relational_features['lemma_jackard_similarity'] = 1 - jaccard_distance(set(s1_lemmas), set(s2_lemmas))
+            jaccard_similarity = 1 - jaccard_distance(set(s1_lemmas), set(s2_lemmas))
+            relational_features['lemma_jackard_similarity'].append(jaccard_similarity)
+
             similarities = [
                 jaccard_similarity(set(lemma1), set(lemma2)) for lemma1 in s1_lemmas for lemma2 in s2_lemmas
             ]
-            # print(similarities)
             avg_similarity = sum(similarities) / len(similarities) if similarities else 0
             max_similarity = max(similarities) if similarities else 0
             relational_features['avg_lemma_similarity'].append(avg_similarity)
             relational_features['max_lemma_similarity'].append(max_similarity)
-            # print(relational_features['lemma_jackard_similarity'], relational_features['avg_lemma_similarity'], relational_features['max_lemma_similarity'])
 
             # Shared lemma count
             shared_lemma_count = len(shared_lemmas)
@@ -296,16 +240,17 @@ class FeatureExtractor:
             lcs_length = compute_lcs_length(s1_lemmas, s2_lemmas)
             relational_features['lemma_lcs_length'].append(lcs_length)
 
+            # Lemma edit distance
             lemma_edit_distance = nltk.edit_distance(s1_lemmas, s2_lemmas)
             relational_features['lemma_edit_distance'].append(lemma_edit_distance)
 
-            # Proportion of lemmas
+            # Proportion of shared lemmas
             proportion_s1_in_s2 = len(shared_lemmas) / len(set(s1_lemmas)) if len(set(s1_lemmas)) > 0 else 0
             proportion_s2_in_s1 = len(shared_lemmas) / len(set(s2_lemmas)) if len(set(s2_lemmas)) > 0 else 0
             relational_features['proportion_s1_in_s2'].append(proportion_s1_in_s2)
             relational_features['proportion_s2_in_s1'].append(proportion_s2_in_s1)
 
-            # Position similarity
+            # Lemma Position similarity
             position_similarity = compute_position_similarity(s1_lemmas, s2_lemmas)
             relational_features['lemma_position_similarity'].append(position_similarity)
 
