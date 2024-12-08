@@ -6,6 +6,7 @@ from utils.preprocessor import Preprocessor
 import nltk
 from nltk.util import bigrams
 from difflib import SequenceMatcher
+from nltk.metrics import jaccard_distance
 
 @lru_cache(maxsize=None)
 def cached_wup_similarity(syn1, syn2):
@@ -142,7 +143,7 @@ class FeatureExtractor:
     def compute_sysnsets_distances(self, df, row, prefix, synsets1, synsets2):
         shared_synsets = synsets1.intersection(synsets2)
         total_unique_synsets = len(set(synsets1).union(set(synsets2)))
-        shared_ratio = len(shared_synsets) / total_unique_synsets if total_unique_synsets > 0 else -1
+        shared_ratio = len(shared_synsets) / total_unique_synsets if total_unique_synsets > 0 else 0
 
         similarities = [
             cached_wup_similarity(syn1, syn2)
@@ -152,8 +153,15 @@ class FeatureExtractor:
 
         df.loc[row, prefix + 'shared_synsets_count'] = len(shared_synsets)
         df.loc[row, prefix + 'shared_synsets_ratio'] = shared_ratio
-        df.loc[row, prefix + 'avg_synset_similarity'] = sum(similarities) / len(similarities) if similarities else -1
-        df.loc[row, prefix + 'max_synset_similarity'] = max(similarities) if similarities else -1
+        if similarities:
+            df.loc[row, prefix + 'avg_synset_similarity'] = sum(similarities) / len(similarities)
+            df.loc[row, prefix + 'max_synset_similarity'] = max(similarities)
+        elif len(synsets1) == 0 and len(synsets2) == 0:
+            df.loc[row, prefix + 'avg_synset_similarity'] = 1
+            df.loc[row, prefix + 'max_synset_similarity'] = 1
+        else:
+            df.loc[row, prefix + 'avg_synset_similarity'] = 0
+            df.loc[row, prefix + 'max_synset_similarity'] = 0
 
     def add_synset_statistics_ext(self, df: DataFrame):
         print("Adding synset based features...")
@@ -189,6 +197,7 @@ class FeatureExtractor:
 
     # Lemma-based techniques
     def add_lemma_statistics(self, df: DataFrame):
+        print("Adding lemma based features...")
         preprop = Preprocessor()
 
         # Preprocess the DataFrame to extract lemmas
@@ -199,6 +208,7 @@ class FeatureExtractor:
             'shared_lemmas_ratio': [],
             'avg_lemma_similarity': [],
             'max_lemma_similarity': [],
+            'lemma_jackard_similarity': [],
             'shared_lemma_count': [],
             'dice_coefficient': [],
             'lemma_bigram_overlap': [],
@@ -231,6 +241,8 @@ class FeatureExtractor:
         for pair in lemmas:
             s1_lemmas = [lemma for lemma in pair[0] if lemma]
             s2_lemmas = [lemma for lemma in pair[1] if lemma]
+            # print(s1_lemmas)
+            # print(s2_lemmas)
 
             # Lemma diversity
             total_unique_lemmas = len(set(s1_lemmas).union(set(s2_lemmas)))
@@ -242,14 +254,16 @@ class FeatureExtractor:
             relational_features['shared_lemmas_ratio'].append(shared_ratio)
 
             # Jaccard similarity
+            relational_features['lemma_jackard_similarity'] = 1 - jaccard_distance(set(s1_lemmas), set(s2_lemmas))
             similarities = [
                 jaccard_similarity(set(lemma1), set(lemma2)) for lemma1 in s1_lemmas for lemma2 in s2_lemmas
             ]
-
+            # print(similarities)
             avg_similarity = sum(similarities) / len(similarities) if similarities else 0
             max_similarity = max(similarities) if similarities else 0
             relational_features['avg_lemma_similarity'].append(avg_similarity)
             relational_features['max_lemma_similarity'].append(max_similarity)
+            # print(relational_features['lemma_jackard_similarity'], relational_features['avg_lemma_similarity'], relational_features['max_lemma_similarity'])
 
             # Shared lemma count
             shared_lemma_count = len(shared_lemmas)
