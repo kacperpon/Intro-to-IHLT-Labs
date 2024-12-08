@@ -51,4 +51,4 @@ def clean_illegal_characters(df):
             return illegal_characters_re.sub('', value)
         return value
     
-    return df.applymap(clean_value)
+    return df.map(clean_value)

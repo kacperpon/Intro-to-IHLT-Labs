@@ -10,6 +10,8 @@ from scikeras.wrappers import KerasRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import make_scorer
 from scipy.stats import pearsonr
+from sklearn.exceptions import ConvergenceWarning
+import warnings
 
 class ModelTrainer:
     """
@@ -80,9 +82,13 @@ class ModelTrainer:
         X = df[input]
         y = df[output]
 
+        # Initialize the MLPRegressor model
         model = MLPRegressor(max_iter=1000, early_stopping=True, validation_fraction=0.1, verbose=False)
+
+        # Define custom scoring function (Pearson correlation)
         pearson_score = make_scorer(self.pearson_scorer, greater_is_better=True)
 
+        # Hyperparameter grid
         param_grid = {
             'hidden_layer_sizes': [(10,), (50,), (100,), (50, 100)],  
             'activation': ['relu', 'tanh'],                                       
@@ -92,6 +98,7 @@ class ModelTrainer:
             'max_iter': [200, 500, 1000]                                                     
         }
 
+        # GridSearchCV with error_score to handle failures
         grid_search = GridSearchCV(
             estimator=model,
             param_grid=param_grid,
@@ -99,15 +106,33 @@ class ModelTrainer:
             cv=5,                             
             verbose=2,                        
             n_jobs=-1,                        
+            error_score='raise'
         )
 
-        grid_search.fit(X, y)
+        # Suppress ConvergenceWarning during training
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
+            try:
+                grid_search.fit(X, y)
+            except ValueError as e:
+                print("Error during GridSearchCV:", e)
+                return None
+
+        # Handle results
         results = grid_search.cv_results_
+        failed_combinations = []
         for mean_score, params in zip(results['mean_test_score'], results['params']):
             if np.isnan(mean_score):
+                failed_combinations.append(params)
+
+        # Log failed combinations
+        if failed_combinations:
+            print(f"Failed combinations: {len(failed_combinations)}")
+            for params in failed_combinations:
                 print("Failed combination:", params)
 
+        # Best model and hyperparameters
         best_model = grid_search.best_estimator_
         print("Best Hyperparameters:", grid_search.best_params_)
 
