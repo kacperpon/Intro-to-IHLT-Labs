@@ -48,8 +48,10 @@ class FeatureExtractor:
             df.loc[i, 's1_n_words'] = len(pos[i][0])
             df.loc[i, 's2_n_words'] = len(pos[i][1])
             # Number of verbs
-            df.loc[i, 's1_n_verbs_tot'] = len([word for word in pos[i][0] if word[1] in self.VERBS])
-            df.loc[i, 's2_n_verbs_tot'] = len([word for word in pos[i][1] if word[1] in self.VERBS])
+            verbs1 = [word for word in pos[i][0] if word[1] in self.VERBS]
+            verbs2 = [word for word in pos[i][1] if word[1] in self.VERBS]
+            df.loc[i, 's1_n_verbs_tot'] = len(verbs1)
+            df.loc[i, 's2_n_verbs_tot'] = len(verbs2)
             # Verbs in present
             df.loc[i, 's1_n_verbs_pres'] = len([word for word in pos[i][0] if word[1] in self.VERBS_PRESENT])
             df.loc[i, 's2_n_verbs_pres'] = len([word for word in pos[i][1] if word[1] in self.VERBS_PRESENT])
@@ -57,14 +59,20 @@ class FeatureExtractor:
             df.loc[i, 's1_n_verbs_past'] = len([word for word in pos[i][0] if word[1] in self.VERBS_PAST])
             df.loc[i, 's2_n_verbs_past'] = len([word for word in pos[i][1] if word[1] in self.VERBS_PAST])
             # Number of nouns
-            df.loc[i, 's1_n_nouns'] = len([word for word in pos[i][0] if word[1] in self.NOUNS])
-            df.loc[i, 's2_n_nouns'] = len([word for word in pos[i][1] if word[1] in self.NOUNS])
+            nouns1 = [word for word in pos[i][0] if word[1] in self.NOUNS]
+            nouns2 = [word for word in pos[i][1] if word[1] in self.NOUNS]
+            df.loc[i, 's1_n_nouns'] = len(nouns1)
+            df.loc[i, 's2_n_nouns'] = len(nouns2)
             # Number of adjectives
-            df.loc[i, 's1_n_adjectives'] = len([word for word in pos[i][0] if word[1] in self.ADJECTIVES])
-            df.loc[i, 's2_n_adjectives'] = len([word for word in pos[i][1] if word[1] in self.ADJECTIVES])
+            adj1 = [word for word in pos[i][0] if word[1] in self.ADJECTIVES]
+            adj2 = [word for word in pos[i][1] if word[1] in self.ADJECTIVES]
+            df.loc[i, 's1_n_adjectives'] = len(adj1)
+            df.loc[i, 's2_n_adjectives'] = len(adj2)
             # Number of adverbs
-            df.loc[i, 's1_n_adverbs'] = len([word for word in pos[i][0] if word[1] in self.ADVERBS])
-            df.loc[i, 's2_n_adverbs'] = len([word for word in pos[i][1] if word[1] in self.ADVERBS])
+            adv1 = [word for word in pos[i][0] if word[1] in self.ADVERBS]
+            adv2 = [word for word in pos[i][1] if word[1] in self.ADVERBS]
+            df.loc[i, 's1_n_adverbs'] = len(adv1)
+            df.loc[i, 's2_n_adverbs'] = len(adv2)
 
         # Compute also the differences
         df['dif_n_words'] = df['s1_n_words'] - df['s2_n_words']
@@ -75,6 +83,12 @@ class FeatureExtractor:
         df['dif_n_adjectives'] = df['s1_n_adjectives'] - df['s2_n_adjectives']
         df['dif_n_adverbs'] = df['s1_n_adverbs'] - df['s2_n_adverbs']
 
+        # Jaccard distance in all words
+        df['jaccard_all_words'] = 1 - jaccard_distance(set(pos[i][0]), set(pos[i][1])) 
+        df['jaccard_verbs'] = 1 - jaccard_distance(set(verbs1), set(verbs2)) if len(verbs1) > 0 and len(verbs2) > 0 else 0
+        df['jaccard_nouns'] = 1 - jaccard_distance(set(nouns1), set(nouns2)) if len(nouns1) > 0 and len(nouns2) > 0 else 0
+        df['jaccard_adjectives'] = 1 - jaccard_distance(set(adj1), set(adj2)) if len(adj1) > 0 and len(adj2) > 0 else 0
+        df['jaccard_adverbs'] = 1 - jaccard_distance(set(adv1), set(adv2)) if len(adv1) > 0 and len(adv2) > 0 else 0
 
     # def add_synset_statistics(self, df: DataFrame):
     #     preprop = Preprocessor()
