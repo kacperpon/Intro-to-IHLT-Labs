@@ -18,6 +18,8 @@
 - [ ] Data analysis [e.g.: plot history of model]
 - [ ] [Optional] Feature selection
 - [x] Refactor + tidy code and files
+    - [ ] Finish feature extraction file
+    - [ ] Preprocess file
 - [x] Deal with failed combinations in MLP gracefully
 - [ ] Error handling throughout
 - [ ] Define README.md
