@@ -224,6 +224,8 @@ class FeatureExtractor:
             if i % 10 == 0:
                 print(f"\rProcessed {i} of {total} rows ({i * 100 / total:.1f}%)", end='', flush=True)
 
+        print(f"\rProcessed {i} of {total} rows (100%)      ")
+
         # Assign computed results to the DataFrame
         for column, values in results.items():
             df[column] = values
@@ -290,8 +292,7 @@ class FeatureExtractor:
             relational_features['shared_lemmas_ratio'].append(shared_ratio)
 
             # Jaccard similarity
-            jaccard_similarity = 1 - jaccard_distance(set(s1_lemmas), set(s2_lemmas))
-            relational_features['lemma_jackard_similarity'].append(jaccard_similarity)
+            relational_features['lemma_jackard_similarity'].append(1 - jaccard_distance(set(s1_lemmas), set(s2_lemmas)))
 
             similarities = [
                 jaccard_similarity(set(lemma1), set(lemma2)) for lemma1 in s1_lemmas for lemma2 in s2_lemmas

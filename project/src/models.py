@@ -174,6 +174,19 @@ class ModelTrainer:
 
         return best_model, grid_search.best_params_
 
+    def train_single_RF(self, df, input, output, params):
+        X = df[input]
+        y = df[output]
+
+        # Define the model
+        pearson_score = make_scorer(self.pearson_scorer, greater_is_better=True)
+        model = RandomForestRegressor(**params) #, scoring=pearson_score)
+
+        # Fit the grid search to the data
+        model.fit(X, y)
+
+        return model
+
     def train_SVR(self, df, input, output):
         """
         Train an SVR model using RandomizedSearchCV to find the best hyperparameters.
