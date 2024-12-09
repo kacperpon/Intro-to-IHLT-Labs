@@ -29,76 +29,121 @@ class FeatureExtractor:
     def __init__(self):
         self.preprocessor = Preprocessor()
 
-        def _compute_pos_statistics(self, pos_tags: List[Tuple[str, str]], pos_set: Set[str]) -> int:
-            """
-            Count POS occurrences in a tagged sentence.
-            """
-            return len([word for word, pos in pos_tags if pos in pos_set])
-
-    def add_POS_statistics(self, df):
+    def add_POS_statistics(self, df) -> None:
+        """
+        Add POS-based features to the DataFrame.
+        """
         print("Adding POS based features...")
 
         pos = self.preprocessor.preprocess_df(df, 'lowercase_tokenize_POS')
 
-        # Add POS statistics
-        for i in range(len(pos)):
-            # Number of words
-            df.loc[i, 's1_n_words'] = len(pos[i][0])
-            df.loc[i, 's2_n_words'] = len(pos[i][1])
+        pos_features = {
+            's1_n_words': [],
+            's2_n_words': [],
+            's1_n_verbs_tot': [],
+            's2_n_verbs_tot': [],
+            's1_n_verbs_pres': [],
+            's2_n_verbs_pres': [],
+            's1_n_verbs_past': [],
+            's2_n_verbs_past': [],
+            's1_n_nouns': [],
+            's2_n_nouns': [],
+            's1_n_adjectives': [],
+            's2_n_adjectives': [],
+            's1_n_adverbs': [],
+            's2_n_adverbs': [],
+            'dif_n_words': [],
+            'dif_n_verbs_tot': [],
+            'dif_n_verbs_pres': [],
+            'dif_n_verbs_past': [],
+            'dif_n_nouns': [],
+            'dif_n_adjectives': [],
+            'dif_n_adverbs': [],
+            'jaccard_all_words': [],
+            'jaccard_verbs': [],
+            'jaccard_nouns': [],
+            'jaccard_adjectives': [],
+            'jaccard_adverbs': [],
+        }
 
-            # Number of verbs
-            verbs1 = [word for word in pos[i][0] if word[1] in self.VERBS]
-            verbs2 = [word for word in pos[i][1] if word[1] in self.VERBS]
+        def safe_jaccard(set1, set2):
+            """
+            Safely calculate Jaccard similarity.
+            """
+            return 1 - jaccard_distance(set1, set2) if set1 and set2 else 0
+    
+        for pair in pos:
+            s1_tokens = pair[0]
+            s2_tokens = pair[1]
 
-            df.loc[i, 's1_n_verbs_tot'] = len(verbs1)
-            df.loc[i, 's2_n_verbs_tot'] = len(verbs2)
+            # Word counts
+            pos_features['s1_n_words'].append(len(s1_tokens))
+            pos_features['s2_n_words'].append(len(s2_tokens))
 
-            # Verbs in present
-            df.loc[i, 's1_n_verbs_pres'] = len([word for word in pos[i][0] if word[1] in self.VERBS_PRESENT])
-            df.loc[i, 's2_n_verbs_pres'] = len([word for word in pos[i][1] if word[1] in self.VERBS_PRESENT])
+            # Count specific POS categories
+            s1_verbs = [word for word in s1_tokens if word[1] in self.VERBS]
+            s2_verbs = [word for word in s2_tokens if word[1] in self.VERBS]
 
-            # Verbs in present
-            df.loc[i, 's1_n_verbs_past'] = len([word for word in pos[i][0] if word[1] in self.VERBS_PAST])
-            df.loc[i, 's2_n_verbs_past'] = len([word for word in pos[i][1] if word[1] in self.VERBS_PAST])
+            s1_verbs_pres = [word for word in s1_tokens if word[1] in self.VERBS_PRESENT]
+            s2_verbs_pres = [word for word in s2_tokens if word[1] in self.VERBS_PRESENT]
 
-            # Number of nouns
-            nouns1 = [word for word in pos[i][0] if word[1] in self.NOUNS]
-            nouns2 = [word for word in pos[i][1] if word[1] in self.NOUNS]
-            df.loc[i, 's1_n_nouns'] = len(nouns1)
-            df.loc[i, 's2_n_nouns'] = len(nouns2)
-            
-            # Number of adjectives
-            adj1 = [word for word in pos[i][0] if word[1] in self.ADJECTIVES]
-            adj2 = [word for word in pos[i][1] if word[1] in self.ADJECTIVES]
-            df.loc[i, 's1_n_adjectives'] = len(adj1)
-            df.loc[i, 's2_n_adjectives'] = len(adj2)
+            s1_verbs_past = [word for word in s1_tokens if word[1] in self.VERBS_PAST]
+            s2_verbs_past = [word for word in s2_tokens if word[1] in self.VERBS_PAST]
 
-            # Number of adverbs
-            adv1 = [word for word in pos[i][0] if word[1] in self.ADVERBS]
-            adv2 = [word for word in pos[i][1] if word[1] in self.ADVERBS]
-            df.loc[i, 's1_n_adverbs'] = len(adv1)
-            df.loc[i, 's2_n_adverbs'] = len(adv2)
+            s1_nouns = [word for word in s1_tokens if word[1] in self.NOUNS]
+            s2_nouns = [word for word in s2_tokens if word[1] in self.NOUNS]
 
-        # Compute also the differences
-        df['dif_n_words'] = df['s1_n_words'] - df['s2_n_words']
-        df['dif_n_verbs_tot'] = df['s1_n_verbs_tot'] - df['s2_n_verbs_tot']
-        df['dif_n_verbs_pres'] = df['s1_n_verbs_pres'] - df['s2_n_verbs_pres']
-        df['dif_n_verbs_past'] = df['s1_n_verbs_past'] - df['s2_n_verbs_past']
-        df['dif_n_nouns'] = df['s1_n_nouns'] - df['s2_n_nouns']
-        df['dif_n_adjectives'] = df['s1_n_adjectives'] - df['s2_n_adjectives']
-        df['dif_n_adverbs'] = df['s1_n_adverbs'] - df['s2_n_adverbs']
+            s1_adjectives = [word for word in s1_tokens if word[1] in self.ADJECTIVES]
+            s2_adjectives = [word for word in s2_tokens if word[1] in self.ADJECTIVES]
 
-        # Jaccard distance in all words
-        df['jaccard_all_words'] = 1 - jaccard_distance(set(pos[i][0]), set(pos[i][1])) 
-        df['jaccard_verbs'] = 1 - jaccard_distance(set(verbs1), set(verbs2)) if len(verbs1) > 0 and len(verbs2) > 0 else 0
-        df['jaccard_nouns'] = 1 - jaccard_distance(set(nouns1), set(nouns2)) if len(nouns1) > 0 and len(nouns2) > 0 else 0
-        df['jaccard_adjectives'] = 1 - jaccard_distance(set(adj1), set(adj2)) if len(adj1) > 0 and len(adj2) > 0 else 0
-        df['jaccard_adverbs'] = 1 - jaccard_distance(set(adv1), set(adv2)) if len(adv1) > 0 and len(adv2) > 0 else 0
+            s1_adverbs = [word for word in s1_tokens if word[1] in self.ADVERBS]
+            s2_adverbs = [word for word in s2_tokens if word[1] in self.ADVERBS]
+
+            # Append counts
+            pos_features['s1_n_verbs_tot'].append(len(s1_verbs))
+            pos_features['s2_n_verbs_tot'].append(len(s2_verbs))
+
+            pos_features['s1_n_verbs_pres'].append(len(s1_verbs_pres))
+            pos_features['s2_n_verbs_pres'].append(len(s2_verbs_pres))
+
+            pos_features['s1_n_verbs_past'].append(len(s1_verbs_past))
+            pos_features['s2_n_verbs_past'].append(len(s2_verbs_past))
+
+            pos_features['s1_n_nouns'].append(len(s1_nouns))
+            pos_features['s2_n_nouns'].append(len(s2_nouns))
+
+            pos_features['s1_n_adjectives'].append(len(s1_adjectives))
+            pos_features['s2_n_adjectives'].append(len(s2_adjectives))
+
+            pos_features['s1_n_adverbs'].append(len(s1_adverbs))
+            pos_features['s2_n_adverbs'].append(len(s2_adverbs))
+
+            # Differences
+            pos_features['dif_n_words'].append(len(s1_tokens) - len(s2_tokens))
+            pos_features['dif_n_verbs_tot'].append(len(s1_verbs) - len(s2_verbs))
+            pos_features['dif_n_verbs_pres'].append(len(s1_verbs_pres) - len(s2_verbs_pres))
+            pos_features['dif_n_verbs_past'].append(len(s1_verbs_past) - len(s2_verbs_past))
+            pos_features['dif_n_nouns'].append(len(s1_nouns) - len(s2_nouns))
+            pos_features['dif_n_adjectives'].append(len(s1_adjectives) - len(s2_adjectives))
+            pos_features['dif_n_adverbs'].append(len(s1_adverbs) - len(s2_adverbs))
+
+            # Jaccard similarities
+            pos_features['jaccard_all_words'].append(safe_jaccard(set(s1_tokens), set(s2_tokens)))
+            pos_features['jaccard_verbs'].append(safe_jaccard(set(s1_verbs), set(s2_verbs)))
+            pos_features['jaccard_nouns'].append(safe_jaccard(set(s1_nouns), set(s2_nouns)))
+            pos_features['jaccard_adjectives'].append(safe_jaccard(set(s1_adjectives), set(s2_adjectives)))
+            pos_features['jaccard_adverbs'].append(safe_jaccard(set(s1_adverbs), set(s2_adverbs)))
+
+        for key, values in pos_features.items():
+            df[key] = values
 
 
-    def compute_sysnsets_distances(self, df, row, prefix, synsets1, synsets2):
+    def compute_synset_distances(self, synsets1, synsets2):
+        """
+        Compute synset-based similarity statistics.
+        """
         shared_synsets = synsets1.intersection(synsets2)
-        total_unique_synsets = len(set(synsets1).union(set(synsets2)))
+        total_unique_synsets = len(synsets1 | synsets2)
         shared_ratio = len(shared_synsets) / total_unique_synsets if total_unique_synsets > 0 else 0
 
         similarities = [
@@ -107,48 +152,81 @@ class FeatureExtractor:
             if syn1.pos() == syn2.pos() and cached_wup_similarity(syn1, syn2) is not None
         ]
 
-        df.loc[row, prefix + 'shared_synsets_count'] = len(shared_synsets)
-        df.loc[row, prefix + 'shared_synsets_ratio'] = shared_ratio
-        if similarities:
-            df.loc[row, prefix + 'avg_synset_similarity'] = sum(similarities) / len(similarities)
-            df.loc[row, prefix + 'max_synset_similarity'] = max(similarities)
-        elif len(synsets1) == 0 and len(synsets2) == 0:
-            df.loc[row, prefix + 'avg_synset_similarity'] = 1
-            df.loc[row, prefix + 'max_synset_similarity'] = 1
-        else:
-            df.loc[row, prefix + 'avg_synset_similarity'] = 0
-            df.loc[row, prefix + 'max_synset_similarity'] = 0
+        avg_similarity = sum(similarities) / len(similarities) if similarities else (1 if not synsets1 and not synsets2 else 0)
+        max_similarity = max(similarities) if similarities else avg_similarity
+
+        return {
+            "shared_synsets_count": len(shared_synsets),
+            "shared_synsets_ratio": shared_ratio,
+            "avg_synset_similarity": avg_similarity,
+            "max_synset_similarity": max_similarity,
+        }
 
 
-    def add_synset_statistics_ext(self, df: DataFrame):
-        print("Adding synset based features...")
+    def add_synset_statistics(self, df: DataFrame) -> None:
+        """
+        Add synset-based features to the DataFrame.
+        """
+        print("Adding synset-based features...")
 
         # Preprocess the DataFrame to extract synsets
         syns = self.preprocessor.preprocess_df(df, 'tokenise_noPunct_lowercase_POS_lemma_noStop_synset')
 
+        def filter_synsets_by_pos(synsets, pos):
+            """Filter synsets by part of speech."""
+            return {s for s in synsets if s.pos() == pos}
+
+        prefixes = ["all_all_", "all_verb_", "all_noun_", "all_adj_", "all_adv_", "best_all_", "best_verb_", "best_noun_", "best_adj_", "best_adv_"]
+        pos_map = {
+            "verb": nltk.corpus.wordnet.VERB,
+            "noun": nltk.corpus.wordnet.NOUN,
+            "adj": nltk.corpus.wordnet.ADJ,
+            "adv": nltk.corpus.wordnet.ADV,
+        }
+
+        results = {prefix + metric: [] for prefix in prefixes for metric in ["shared_synsets_count", "shared_synsets_ratio", "avg_synset_similarity", "max_synset_similarity"]}
+
         total = len(syns)
-        for i in range(total):
-            # All synsets statistics
-            s1 = {synset for sublist in syns[i][0] for synset in sublist}
-            s2 = {synset for sublist in syns[i][1] for synset in sublist}
-            self.compute_sysnsets_distances(df, i, 'all_all_', s1, s2)
-            self.compute_sysnsets_distances(df, i, 'all_verb_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.VERB}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.VERB})
-            self.compute_sysnsets_distances(df, i, 'all_noun_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.NOUN}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.NOUN})
-            self.compute_sysnsets_distances(df, i, 'all_adj_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.ADJ}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.ADJ})
-            self.compute_sysnsets_distances(df, i, 'all_adv_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.ADV}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.ADV})
-        
-            # Most common sysnset statistics
-            s1 = {synset[0] for synset in syns[i][0] if len(synset) > 0}
-            s2 = {synset[0] for synset in syns[i][1] if len(synset) > 0}
-            self.compute_sysnsets_distances(df, i, 'best_all_', s1, s2)
-            self.compute_sysnsets_distances(df, i, 'best_verb_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.VERB}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.VERB})
-            self.compute_sysnsets_distances(df, i, 'best_noun_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.NOUN}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.NOUN})
-            self.compute_sysnsets_distances(df, i, 'best_adj_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.ADJ}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.ADJ})
-            self.compute_sysnsets_distances(df, i, 'best_adv_', {s for s in s1 if s.pos() == nltk.corpus.wordnet.ADV}, {s for s in s2 if s.pos() == nltk.corpus.wordnet.ADV})
+        for i, (syns1_list, syns2_list) in enumerate(syns):
+            # Flatten synsets for "all" and "best" calculations
+            all_synsets1 = {synset for sublist in syns1_list for synset in sublist}
+            all_synsets2 = {synset for sublist in syns2_list for synset in sublist}
+            best_synsets1 = {sublist[0] for sublist in syns1_list if sublist}
+            best_synsets2 = {sublist[0] for sublist in syns2_list if sublist}
+
+            # Compute statistics for "all" synsets
+            all_stats = self.compute_synset_distances(all_synsets1, all_synsets2)
+            for metric, value in all_stats.items():
+                results[f"all_all_{metric}"].append(value)
+
+            # Compute statistics for specific POS categories
+            for pos_name, pos in pos_map.items():
+                filtered_syns1 = filter_synsets_by_pos(all_synsets1, pos)
+                filtered_syns2 = filter_synsets_by_pos(all_synsets2, pos)
+                pos_stats = self.compute_synset_distances(filtered_syns1, filtered_syns2)
+                for metric, value in pos_stats.items():
+                    results[f"all_{pos_name}_{metric}"].append(value)
+
+            # Compute statistics for "best" synsets
+            best_stats = self.compute_synset_distances(best_synsets1, best_synsets2)
+            for metric, value in best_stats.items():
+                results[f"best_all_{metric}"].append(value)
+
+            # Compute statistics for specific POS categories for "best"
+            for pos_name, pos in pos_map.items():
+                filtered_syns1 = filter_synsets_by_pos(best_synsets1, pos)
+                filtered_syns2 = filter_synsets_by_pos(best_synsets2, pos)
+                pos_stats = self.compute_synset_distances(filtered_syns1, filtered_syns2)
+                for metric, value in pos_stats.items():
+                    results[f"best_{pos_name}_{metric}"].append(value)
+
+            # Progress tracking
             if i % 10 == 0:
-                print(f"\rProcessed {i} of {total} rows ({i*100/total:.1f}%)", end='', flush=True)
-        
-        print(f"\rProcessed {i + 1}/{len(syns)} rows (100.0%)    ")
+                print(f"\rProcessed {i} of {total} rows ({i * 100 / total:.1f}%)", end='', flush=True)
+
+        # Assign computed results to the DataFrame
+        for column, values in results.items():
+            df[column] = values
 
 
     def add_lemma_statistics(self, df: DataFrame) -> None:
