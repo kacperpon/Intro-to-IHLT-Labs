@@ -17,4 +17,4 @@
 - [ ] Finish presentation slides
 
 ASK PAU:
-- [ ] Run feature extraction pipeline again to ensure refactor didn't mess stuff up
+- [ ] Run entire pipeline one last time
