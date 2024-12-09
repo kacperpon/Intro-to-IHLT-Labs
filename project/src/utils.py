@@ -3,6 +3,7 @@ import pandas as pd
 import re
 import datetime
 import os
+from scipy.stats import pearsonr
 
 def load_data(path_f, path_gs, files) -> pd.DataFrame:
     """
@@ -52,3 +53,35 @@ def clean_illegal_characters(df):
         return value
     
     return df.map(clean_value)
+
+def evaluate_rf_model(model_trainer, df_train, df_test, features, target_column, save_path, pred_col, n_iterations=10):
+    """
+    Evaluate a Random Forest model using Pearson correlation.
+    """
+    # Find the best parameter combination and train the model
+    best_model, best_params = model_trainer.train_RF(df_train, features, target_column)
+    
+    # Predict on test data and calculate single iteration correlation
+    df_test['predicted'] = best_model.predict(df_test[features])
+    single_iteration_correlation = pearsonr(df_test[target_column], df_test['predicted'])[0]
+    
+    print(f'\nPearson correlation for the best RF model: {single_iteration_correlation}')
+    
+    # Calculate mean Pearson correlation
+    print(f"Computing mean Pearson correlation for {n_iterations} iterations...")
+    total = 0
+    
+    for _ in range(n_iterations):
+        # Train a single RF model with the best parameters
+        rf_model = model_trainer.train_single_RF(df_train, features, target_column, best_params)
+        
+        # Predict and calculate correlation
+        df_test['predicted'] = rf_model.predict(df_test[features])
+        total += pearsonr(df_test[target_column], df_test['predicted'])[0]
+    
+    mean_correlation = total / n_iterations
+    print(f'Mean Pearson correlation over {n_iterations} iterations: {mean_correlation}')
+    
+    save_predictions(df_test, save_path, pred_col)
+    
+    return best_model, best_params, single_iteration_correlation, mean_correlation
