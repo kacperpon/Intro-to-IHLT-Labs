@@ -166,3 +166,59 @@ def update_results_csv(results_file, model_name, feature_set, metrics, predictio
         if is_new_file:  # Write header if file is new
             writer.writeheader()
         writer.writerow(row)
+
+
+def generate_plots_from_metrics(file_path, save_path="plots"):
+    """
+    Generate plots from metrics.csv to visualize performance metrics.
+    """
+    Path(save_path).mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_csv(file_path)
+
+    # Convert 'Timestamp' to datetime for time-based analysis
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+
+    # Plot RMSE by Feature Set (bar plot)
+    plt.figure(figsize=(12, 8))
+    for feature_set in df['Feature Set'].unique():
+        subset = df[df['Feature Set'] == feature_set]
+        plt.bar(subset['Feature Set'], subset['RMSE'], label=feature_set)
+    plt.xlabel('Feature Set')
+    plt.ylabel('RMSE')
+    plt.title('RMSE by Feature Set for Random Forest')
+    plt.legend(title='Feature Set')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.savefig(f"{save_path}/rf_rmse_by_feature_set.png")
+    plt.close()
+
+    # Mean Correlation by Feature Set (line plot with markers)
+    plt.figure(figsize=(12, 8))
+    for feature_set in df['Feature Set'].unique():
+        subset = df[df['Feature Set'] == feature_set]
+        plt.plot(subset['Feature Set'], subset['Mean Correlation'], marker='o', label=feature_set)
+    plt.xlabel('Feature Set')
+    plt.ylabel('Mean Correlation')
+    plt.title('Mean Correlation by Feature Set for Random Forest')
+    plt.legend(title='Feature Set')
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.savefig(f"{save_path}/rf_mean_correlation_by_feature_set.png")
+    plt.close()
+
+    # Correlation Standard Deviation (boxplot)
+    plt.figure(figsize=(12, 8))
+    df.boxplot(column='Standard Deivation of Correlations', by='Feature Set', grid=False, patch_artist=True, showmeans=True)
+    plt.xlabel('Feature Set')
+    plt.ylabel('Standard Deviation of Correlations')
+    plt.title('Standard Deviation of Correlations by Feature Set for Random Forest')
+    plt.suptitle('')  # Remove default boxplot title
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    plt.savefig(f"{save_path}/rf_std_correlation_by_feature_set.png")
+    plt.close()
+
+    print(f"Plots have been saved to {save_path}/")
+
