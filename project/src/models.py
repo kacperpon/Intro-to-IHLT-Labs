@@ -183,15 +183,14 @@ class ModelTrainer:
         N = 10  # Number of top features to display
         top_features = feature_importances.head(N)
 
-        plt.figure(figsize=(10, 6))
-        plt.barh(top_features['Feature'], top_features['Importance'], edgecolor='k')
-        plt.xlabel("Importance")
-        plt.ylabel("Feature")
-        plt.title(f"Top {N} Important Features")
-        plt.gca().invert_yaxis()  # Invert y-axis for better readability
-        plt.show()
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.barh(top_features['Feature'], top_features['Importance'], edgecolor='k')
+        ax.set_xlabel("Importance")
+        ax.set_ylabel("Feature")
+        ax.set_title(f"Top {N} Important Features")
+        ax.invert_yaxis()  # Invert y-axis for better readability
 
-        return best_model, grid_search.best_params_
+        return best_model, grid_search.best_params_, fig
 
     def train_single_RF(self, df, input, output, params):
         X = df[input]

@@ -1,4 +1,6 @@
 import csv
+from pathlib import Path
+from matplotlib import pyplot as plt
 import pandas as pd
 import re
 import datetime
@@ -25,22 +27,31 @@ def load_data(path_f, path_gs, files) -> pd.DataFrame:
         
     return dt
 
-def save_predictions(df, save_path, model_name):
+def save_predictions(df, save_path, model_name, figure=None):
     """
     Save predictions to a file.
     """
-    os.makedirs(save_path, exist_ok=True)
+    model_dir = Path(save_path) / model_name
+    model_dir.mkdir(parents=True, exist_ok=True)
 
-    now = datetime.datetime.now()
-    timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    csv_file = os.path.join(save_path, f'{timestamp}_{model_name}_predicted_test_data.csv')
+    # Save predictions to CSV
+    csv_file = model_dir / f"{timestamp}_test_data.csv"
     df.to_csv(csv_file, index=False)
     print(f"Predicted data saved to CSV: {csv_file}")
 
+    # Save predictions to Excel
     df_clean = clean_illegal_characters(df)
-    excel_file = os.path.join(save_path, f'{timestamp}_{model_name}_predicted_test_data.xlsx')
+    excel_file = model_dir / f"{timestamp}_test_data.xlsx"
     df_clean.to_excel(excel_file, index=False)
+
+    if figure:
+        graph_file = model_dir / f"{timestamp}_feature_importance.png"
+        figure.savefig(graph_file, bbox_inches="tight")
+        print(f"Feature importance graph saved as: {graph_file}")
+        plt.close(figure)
+
     print(f"Predicted data saved to Excel: {excel_file}")
 
 def clean_illegal_characters(df):
@@ -61,7 +72,7 @@ def evaluate_rf_model(model_trainer, df_train, df_test, features, target_column,
     Evaluate a Random Forest model using Pearson correlation.
     """
     # Find the best parameter combination and train the model
-    best_model, best_params = model_trainer.train_RF(df_train, features, target_column)
+    best_model, best_params, feature_importance_figure = model_trainer.train_RF(df_train, features, target_column)
     
     # Predict on test data and calculate single iteration correlation
     df_test['predicted'] = best_model.predict(df_test[features])
@@ -84,7 +95,7 @@ def evaluate_rf_model(model_trainer, df_train, df_test, features, target_column,
     mean_correlation = total / n_iterations
     print(f'Mean Pearson correlation over {n_iterations} iterations: {mean_correlation}')
     
-    save_predictions(df_test, save_path, pred_col)
+    save_predictions(df_test, save_path, pred_col, feature_importance_figure)
     
     return best_model, best_params, single_iteration_correlation, mean_correlation
 
