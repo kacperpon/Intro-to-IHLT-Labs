@@ -1,0 +1,2 @@
+Timestamp,Model,Feature Set,RMSE,Mean Correlation,Max Correlation,Standard Deivation of Correlations,Single Iteration Correlation,Prediction File
+2024-12-10 21:37:55,RandomForest,lexical,0.9845765052150897,0.7420333661454135,0.7430552931713299,0.0007141648560405231,0.7434054540829272,../data/test/03_predicted//predicted_rf_lex.csv

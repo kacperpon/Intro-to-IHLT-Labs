@@ -6,6 +6,7 @@ import re
 import datetime
 import os
 from scipy.stats import pearsonr
+from sklearn.metrics import mean_squared_error
 
 THRESHOLD = 0.8
 
@@ -77,12 +78,16 @@ def evaluate_rf_model(model_trainer, df_train, df_test, features, target_column,
     # Predict on test data and calculate single iteration correlation
     df_test['predicted'] = best_model.predict(df_test[features])
     single_iteration_correlation = pearsonr(df_test[target_column], df_test['predicted'])[0]
-    
     print(f'\nPearson correlation for the best RF model: {single_iteration_correlation}')
+
+    # Calculate regression metrics
+    mse = mean_squared_error(df_test[target_column], df_test['predicted'])
+    rmse = mse ** 0.5
     
     # Calculate mean Pearson correlation
     print(f"Computing mean Pearson correlation for {n_iterations} iterations...")
-    total = 0
+    total_correlation = 0
+    correlations = []
     
     for _ in range(n_iterations):
         # Train a single RF model with the best parameters
@@ -90,14 +95,25 @@ def evaluate_rf_model(model_trainer, df_train, df_test, features, target_column,
         
         # Predict and calculate correlation
         df_test['predicted'] = rf_model.predict(df_test[features])
-        total += pearsonr(df_test[target_column], df_test['predicted'])[0]
+        iteration_correlation = pearsonr(df_test[target_column], df_test['predicted'])[0]
+        correlations.append(iteration_correlation)
+        total_correlation += iteration_correlation
     
-    mean_correlation = total / n_iterations
+    mean_correlation = total_correlation / n_iterations
     print(f'Mean Pearson correlation over {n_iterations} iterations: {mean_correlation}')
     
     save_predictions(df_test, save_path, pred_col, feature_importance_figure)
+
+    metrics = {
+        "single_iteration_correlation": single_iteration_correlation,
+        "mean_correlation": mean_correlation,
+        "max_correlation": max(correlations),
+        "min_correlation": min(correlations),
+        "std_correlation": (sum((x - mean_correlation) ** 2 for x in correlations) / n_iterations) ** 0.5,
+        "rmse": rmse,
+    }
     
-    return best_model, best_params, single_iteration_correlation, mean_correlation
+    return best_model, best_params, metrics, mean_correlation
 
 def drop_highly_correlated_features(df, threshold=0.8) -> list:
     """
@@ -120,3 +136,33 @@ def drop_highly_correlated_features(df, threshold=0.8) -> list:
                         features_to_drop.add(index)
 
     return list(features_to_drop)
+
+def update_results_csv(results_file, model_name, feature_set, metrics, prediction_file):
+    """
+    Update the results.csv file with run details.
+    """
+    results_path = Path(results_file)
+    results_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Check if the file is new (doesn't exist yet)
+    is_new_file = not results_path.exists()
+
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    row = {
+        "Timestamp": timestamp,
+        "Model": model_name,
+        "Feature Set": feature_set,
+        "RMSE": metrics.get("rmse", ""),
+        "Mean Correlation": metrics.get("mean_correlation", ""),
+        "Max Correlation": metrics.get("max_correlation", ""),
+        "Standard Deivation of Correlations": metrics.get("std_correlation", ""),
+        "Single Iteration Correlation": metrics.get("single_iteration_correlation", ""),
+        "Prediction File": prediction_file,
+    }
+
+    with results_path.open("a", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=row.keys())
+        if is_new_file:  # Write header if file is new
+            writer.writeheader()
+        writer.writerow(row)
