@@ -5,7 +5,6 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 from sklearn.neural_network import MLPRegressor
-from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from scikeras.wrappers import KerasRegressor
 from sklearn.preprocessing import StandardScaler
@@ -18,7 +17,7 @@ import pandas as pd
 class ModelTrainer:
     """
     A class encapsulating various training methods for different models:
-    Neural Network, MLP, Random Forest, and SVR.
+    Neural Network, MLP, Random Forest.
     """
 
     @staticmethod
@@ -204,40 +203,3 @@ class ModelTrainer:
         model.fit(X, y)
 
         return model
-
-    def train_SVR(self, df, input, output):
-        """
-        Train an SVR model using RandomizedSearchCV to find the best hyperparameters.
-        """
-        X = df[input]
-        y = df[output]
-
-        scaler = StandardScaler()
-        X_scaled = scaler.fit_transform(X)
-
-        pearson_score = make_scorer(self.pearson_scorer, greater_is_better=True)
-
-        model = SVR(cache_size=2000)
-
-        param_grid = {
-            'kernel': ['rbf'],
-            'C': [0.1, 1, 10, 100],
-            'gamma': ['scale', 'auto']
-        }
-
-        random_search = RandomizedSearchCV(
-            estimator=model,
-            param_distributions=param_grid,
-            n_iter=20,
-            cv=3,
-            scoring=pearson_score,
-            verbose=1,
-            n_jobs=10,
-        )
-
-        random_search.fit(X_scaled, y)
-        best_params = random_search.best_params_
-        print("Best params:", best_params)
-        best_model = random_search.best_estimator_
-
-        return best_model
