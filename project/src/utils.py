@@ -5,6 +5,8 @@ import datetime
 import os
 from scipy.stats import pearsonr
 
+THRESHOLD = 0.8
+
 def load_data(path_f, path_gs, files) -> pd.DataFrame:
     """
     Load data from files and return a DataFrame.
@@ -85,3 +87,25 @@ def evaluate_rf_model(model_trainer, df_train, df_test, features, target_column,
     save_predictions(df_test, save_path, pred_col)
     
     return best_model, best_params, single_iteration_correlation, mean_correlation
+
+def drop_highly_correlated_features(df, threshold=0.8) -> list:
+    """
+    Drop highly correlated features from a DataFrame.
+    """
+    features_to_drop = set()
+    
+    # Recompute the correlation matrix and variances
+    correlation_matrix = df.corr()
+    variances = df.var()
+
+    for col in correlation_matrix.columns:
+        for index in correlation_matrix.index:
+            if col != index and abs(correlation_matrix[col][index]) > threshold:
+                # Drop the feature with lower variance
+                if col not in features_to_drop and index not in features_to_drop:  # Avoid re-checking
+                    if variances[col] < variances[index]:
+                        features_to_drop.add(col)
+                    else:
+                        features_to_drop.add(index)
+
+    return list(features_to_drop)

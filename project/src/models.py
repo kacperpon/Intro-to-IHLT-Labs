@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from tensorflow.keras.models import Sequential
@@ -12,6 +13,7 @@ from sklearn.metrics import make_scorer
 from scipy.stats import pearsonr
 from sklearn.exceptions import ConvergenceWarning
 import warnings
+import pandas as pd
 
 class ModelTrainer:
     """
@@ -171,6 +173,23 @@ class ModelTrainer:
 
         best_model = grid_search.best_estimator_
         print("Best Hyperparameters:", grid_search.best_params_)
+
+        # Plot feature importance
+        feature_importances = pd.DataFrame({
+            'Feature': input,
+            'Importance': best_model.feature_importances_
+        }).sort_values(by='Importance', ascending=False)
+
+        N = 10  # Number of top features to display
+        top_features = feature_importances.head(N)
+
+        plt.figure(figsize=(10, 6))
+        plt.barh(top_features['Feature'], top_features['Importance'], edgecolor='k')
+        plt.xlabel("Importance")
+        plt.ylabel("Feature")
+        plt.title(f"Top {N} Important Features")
+        plt.gca().invert_yaxis()  # Invert y-axis for better readability
+        plt.show()
 
         return best_model, grid_search.best_params_
 
