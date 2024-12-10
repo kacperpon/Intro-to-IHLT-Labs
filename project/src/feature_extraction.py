@@ -224,7 +224,7 @@ class FeatureExtractor:
             if i % 10 == 0:
                 print(f"\rProcessed {i} of {total} rows ({i * 100 / total:.1f}%)", end='', flush=True)
 
-        print(f"\rProcessed {i} of {total} rows (100%)      ")
+        print(f"\rProcessed {i + 1} of {total} rows (100%)      ")
 
         # Assign computed results to the DataFrame
         for column, values in results.items():
