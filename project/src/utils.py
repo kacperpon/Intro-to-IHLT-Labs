@@ -68,7 +68,7 @@ def clean_illegal_characters(df):
     
     return df.map(clean_value)
 
-def evaluate_rf_model(model_trainer, df_train, df_test, features, target_column, save_path, pred_col, n_iterations=10):
+def evaluate_rf_model(model_trainer, df_train, df_test, features, target_column, save_path, pred_col, n_iterations=10, save_results=True):
     """
     Evaluate a Random Forest model using Pearson correlation.
     """
@@ -102,7 +102,8 @@ def evaluate_rf_model(model_trainer, df_train, df_test, features, target_column,
     mean_correlation = total_correlation / n_iterations
     print(f'Mean Pearson correlation over {n_iterations} iterations: {mean_correlation}')
     
-    save_predictions(df_test, save_path, pred_col, feature_importance_figure)
+    if save_results:
+        save_predictions(df_test, save_path, pred_col, feature_importance_figure)
 
     metrics = {
         "single_iteration_correlation": single_iteration_correlation,
