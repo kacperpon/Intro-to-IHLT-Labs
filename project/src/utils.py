@@ -198,7 +198,7 @@ def generate_plots_from_metrics(file_path, save_path="plots"):
     plt.figure(figsize=(12, 8))
     for feature_set in df['Feature Set'].unique():
         subset = df[df['Feature Set'] == feature_set]
-        plt.plot(subset['Feature Set'], subset['Mean Correlation'], marker='o', label=feature_set)
+        plt.plot(subset['Feature Set'], subset['Mean Correlation'], marker='o', markersize=16, label=feature_set)
     plt.xlabel('Feature Set')
     plt.ylabel('Mean Correlation')
     plt.title('Mean Correlation by Feature Set for Random Forest')
