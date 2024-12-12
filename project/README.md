@@ -5,6 +5,9 @@
 - Kacper Poniatowski
 - Pau Blanco
 
+## Main Notebook
+The main notebook of the project can be located at project/src/pipeline.ipynb
+
 ## Project Structure
 project/
 │
